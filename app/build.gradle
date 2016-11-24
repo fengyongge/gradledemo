@@ -1,0 +1,147 @@
+apply plugin: 'com.android.application'
+
+android {
+    compileSdkVersion 24
+    buildToolsVersion "25.0.0"
+
+    defaultConfig {
+        applicationId "com.zzti.fengyongge.gradledemo"
+        minSdkVersion 15
+        targetSdkVersion 24
+        versionCode 1
+        versionName "1.0"
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+        multiDexEnabled true
+    }
+
+
+    compileOptions {
+
+    }
+
+    dexOptions {
+        preDexLibraries = false
+        incremental true
+        //开启incremental dexing,优化编译效率，这个功能android studio默认是关闭的。
+        javaMaxHeapSize "4g"     //增加java堆内存大小
+    }
+
+    sourceSets {
+        main {
+            assets.srcDirs = ['assets']    //资源文件
+            jni.srcDirs 'src/main/jni'     //jni文件
+            jniLibs.srcDir 'src/main/jniLibs' //jni库
+        }
+
+    }
+
+    lintOptions {
+        abortOnError false
+        //即使报错也不会停止打包
+        checkReleaseBuilds false
+        //打包release版本的时候进行检测
+    }
+
+
+
+    signingConfigs {
+        release {
+            keyAlias 'gradle'
+            keyPassword '123456'
+            storeFile file('demo.debug.jks')
+            storePassword '123456'
+        }
+
+        debug {
+            keyAlias 'gradle'
+            keyPassword '123456'
+            storeFile file('demo.release.jks')
+            storePassword '123456'
+        }
+    }
+
+    buildTypes {
+
+        release {
+            manifestPlaceholders += [APP_NAME: 'release版']
+            manifestPlaceholders += [CURRENT_PKG: 'com.zzti.fengyongge.gradledemo']
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
+        }
+
+        debug {
+            manifestPlaceholders += [APP_NAME: 'Bate版']
+            manifestPlaceholders += [CURRENT_PKG: 'com.zzti.fengyongge.gradledemo.test']
+            applicationIdSuffix '.test'
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.debug
+
+        }
+    }
+
+    productFlavors {
+        yingyongbao{}
+        baidu {}
+        google {}
+        wandoujia {}
+        xiaomi {}
+
+    }
+
+    productFlavors.all { flavor ->
+        flavor.manifestPlaceholders = [UMENG_CHANNEL_ID: flavor.name]
+    }
+
+    applicationVariants.all { variant ->
+        variant.outputs.each { output ->
+            // 重命名产出的apk文件
+            def outputFile = output.outputFile
+            if (outputFile != null && outputFile.name.endsWith('.apk')) {
+                File outputDirectory = new File(outputFile.parent);
+                def fileName
+                if (variant.buildType.name == "release") {
+                    fileName = "app_v${defaultConfig.versionName}_${defaultConfig.versionCode}_${packageTime()}_${variant.productFlavors[0].name}.apk"
+                } else {
+                    fileName = "app_v${defaultConfig.versionName}_${defaultConfig.versionCode}_${packageTime()}_debug.apk"
+                }
+                output.outputFile = new File(outputDirectory, fileName)
+            }
+        }
+    }
+
+
+    repositories {
+        maven {
+            url "https://jitpack.io"
+        }
+    }
+
+
+    dexOptions {
+        preDexLibraries = false
+        //让它不要对Lib做preDexing
+        incremental true
+        //开启incremental dexing,优化编译效率，这个功能android studio默认是关闭的。
+        javaMaxHeapSize "4g"     //增加java堆内存大小
+    }
+
+}
+
+def packageTime() {
+    return new Date().format("yyyyMMdd", TimeZone.getTimeZone("UTC"))
+}
+
+
+dependencies {
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+    androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
+        exclude group: 'com.android.support', module: 'support-annotations'
+    })
+    compile 'com.android.support:appcompat-v7:24.2.1'
+    compile 'com.nostra13.universalimageloader:universal-image-loader:1.9.5'
+    compile 'com.alibaba:fastjson:1.1.52.android'
+
+    testCompile 'junit:junit:4.12'
+}
